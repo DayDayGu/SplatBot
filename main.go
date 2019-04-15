@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	// "strconv"
+	"strconv"
 	"time"
 	// "date"
 
@@ -31,7 +31,7 @@ func main() {
 	// 初始化bot
 	poller := &tb.LongPoller{Timeout: 10 * time.Second}
 	middleware := tb.NewMiddlewarePoller(poller, func(udp *tb.Update) bool {
-		// fmt.Printf("%+v\n", udp.Message)
+		fmt.Printf("%+v\n", udp.Message)
 		return true
 	})
 	b, err := tb.NewBot(tb.Settings{
@@ -100,10 +100,11 @@ func league(b *tb.Bot) {
 
 	b.Handle("/league", func(m *tb.Message) {
 		leaguebtns := [][]tb.InlineButton{}
-		for _, league := range S.League {
+		for k, league := range S.League {
 			content := fmt.Sprintf(`%s %s`, time.Unix(league.StartTime, 0).Format("15:04"), league.Rule.Name)
 			btn := tb.InlineButton{Text: content,
-				Data: league.Rule.Name}
+				Data:   league.Rule.Name,
+				Unique: strconv.Itoa(k)}
 			b.Handle(&btn, func(m *tb.Callback) {
 				err := CreateLeagueInvitation(m.Message.ID, m.Sender.ID, m.Sender.Username, m.Data)
 				if err != nil {
