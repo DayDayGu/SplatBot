@@ -21,6 +21,7 @@ var S Schedules
 var GlobalMsg map[int]tb.Message
 
 func main() {
+	// go Update(time.Now().Unix() + int64(time.Second*5))
 
 	// 初始化用于splat数据库
 	InitDatabase()
@@ -36,7 +37,7 @@ func main() {
 	})
 	b, err := tb.NewBot(tb.Settings{
 		// Modify Token here.
-		Token:  "",
+		Token:  "828734497:AAG-IPVwnVR9viSlIYmGM7XTWDEpkSPVW04",
 		Poller: middleware,
 	})
 	if err != nil {
@@ -154,6 +155,20 @@ func Fetch() {
 			fetchSchedules()
 		}
 	}()
+}
+
+func Update(des int64) {
+	current := time.Now().Unix()
+
+	duration := time.Duration((des - current))
+	fmt.Printf("duration is %d\n", duration)
+	done := make(chan int)
+	go func(ch <-chan time.Time) {
+		fmt.Printf("Now is %s\n", <-ch)
+		done <- 1
+	}(time.After(duration))
+	<-done
+	close(done)
 }
 
 // 点击加入之后刷新message
