@@ -7,14 +7,17 @@ import (
 	"time"
 )
 
+// LeagueStatus 组排状态
 type LeagueStatus int
 
+// LeagueStatusActive 活跃
 const (
 	LeagueStatusActive = 0
 	LeagueStatusFull
 	LeagueStatusEnd
 )
 
+// LeagueInvitation 邀请struct
 type LeagueInvitation struct {
 	ID         int          `json:"id"`
 	Member1    string       `json:"member1"`
@@ -31,6 +34,7 @@ type LeagueInvitation struct {
 	CreateDate string       `json:"create_date"`
 }
 
+// CreateLeagueInvitation 创建邀请
 func CreateLeagueInvitation(id, ownerID int, owner, rule string) error {
 	if id == 0 || owner == "" {
 		return errors.New("无效的用户")
@@ -52,6 +56,7 @@ func CreateLeagueInvitation(id, ownerID int, owner, rule string) error {
 	return nil
 }
 
+// AddLeagueInvitationMember 增加组排人员
 func AddLeagueInvitationMember(id, userID int, username string) error {
 	invitation, err := FetchLeaugeInvitation(id)
 	if err != nil {
@@ -79,6 +84,7 @@ func AddLeagueInvitationMember(id, userID int, username string) error {
 	return errors.New("队伍已经满员啦")
 }
 
+// FetchLeaugeInvitation 获取组队信息
 func FetchLeaugeInvitation(id int) (LeagueInvitation, error) {
 	ret := LeagueInvitation{}
 	if id == 0 {

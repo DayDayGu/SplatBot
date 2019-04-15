@@ -13,7 +13,7 @@ import (
 // DefaultDB 默认数据库
 var DefaultDB *sql.DB
 
-// VolumnPath t
+// VolumnPath 获取存储路径，区分环境
 func VolumnPath(file string) string {
 	s := os.Getenv("SPLAT_MODE")
 	if s == "release" {
