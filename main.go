@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -35,7 +36,7 @@ func main() {
 	})
 	b, err := tb.NewBot(tb.Settings{
 		// Modify Token here.
-		Token:  "828734497:AAGczERxUIf2Su5hvcrVi7KBg7qd_MzKUXI",
+		Token:  os.Getenv("SPLAT_BOT_TOKEN"),
 		Poller: middleware,
 	})
 	if err != nil {

@@ -15,7 +15,7 @@ var DefaultDB *sql.DB
 
 // VolumnPath 获取存储路径，区分环境
 func VolumnPath(file string) string {
-	s := os.Getenv("SPLAT_MODE")
+	s := os.Getenv("SPLAT_ENV")
 	if s == "release" {
 		return "/SplatBot/" + file
 	}
