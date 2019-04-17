@@ -14,16 +14,17 @@ type LeagueStatus int
 // LeagueStatusActive 活跃
 const (
 	LeagueStatusActive = 0
-	LeagueStatusFull
-	LeagueStatusEnd
+	LeagueStatusFull   = 1
+	LeagueStatusEnd    = 2
 )
 
 // LeagueType 双排or四排
 type LeagueType int
 
+// LLeagueTypeDouble 双排
 const (
-	LeagueStatusDouble = 0
-	LeagueStatusFour
+	LeagueTypeDouble = 0
+	LeagueTypeFour   = 1
 )
 
 // LeagueInvitation 邀请struct
@@ -52,7 +53,7 @@ var mu sync.RWMutex
 // owner 用户的username
 // rule 真格规则
 // startTime 真格开始时间戳
-func CreateLeagueInvitation(id, ownerID int, owner, rule string, startTime int) error {
+func CreateLeagueInvitation(id, ownerID int, owner, rule string, startTime int64, tp LeagueType) error {
 	if id == 0 || owner == "" {
 		return errors.New("无效的用户")
 	}
@@ -64,12 +65,13 @@ func CreateLeagueInvitation(id, ownerID int, owner, rule string, startTime int) 
                            member1,
                            rule,
                            start_time,
+                           type,
                            create_date) 
-                           values('%d','%d', '%s', '%s', '%d', '%d')`,
-		id, ownerID, owner, rule, startTime, now)
+                           values('%d','%d', '%s', '%s', '%d', '%d', '%d')`,
+		id, ownerID, owner, rule, startTime, tp, now)
 	mu.Lock()
-	defer mu.Unlock()
 	_, err := DefaultDB.Exec(insert)
+	mu.Unlock()
 	if err != nil {
 		fmt.Printf("create err:%s", err)
 		return err
@@ -83,8 +85,8 @@ func MarkLeagueInvitation(id int, status LeagueStatus) error {
 		update := fmt.Sprintf(`update league set status = '%s' where id = %d`,
 			status, id)
 		mu.Lock()
-		defer mu.Unlock()
 		_, err := DefaultDB.Exec(update)
+		mu.Unlock()
 		if err != nil {
 			fmt.Printf("mark err:%s", err)
 			return err
@@ -105,8 +107,8 @@ func DeleteLeagueInvitationMember(id, userID int) error {
 		update := fmt.Sprintf(`update league set %s = '',%s = 0 where id = %d`,
 			key, idkey, id)
 		mu.Lock()
-		defer mu.Unlock()
 		_, err := DefaultDB.Exec(update)
+		mu.Unlock()
 		if err != nil {
 			fmt.Printf("delete err:%s", err)
 			return err
@@ -141,8 +143,8 @@ func AddLeagueInvitationMember(id, userID int, username string) error {
 		update := fmt.Sprintf(`update league set %s = '%s',%s = %d where id = %d`,
 			key, value, idkey, idvalue, id)
 		mu.Lock()
-		defer mu.Unlock()
 		_, err := DefaultDB.Exec(update)
+		mu.Unlock()
 		if err != nil {
 			fmt.Printf("add err:%s", err)
 			return err
@@ -151,6 +153,9 @@ func AddLeagueInvitationMember(id, userID int, username string) error {
 	}
 	if username == invitation.Member1 || username == invitation.Member2 || username == invitation.Member3 || username == invitation.Member4 {
 		return errors.New("已经参与过")
+	}
+	if invitation.Member1 == "" {
+		return add(id, "member1", username, "memberid1", userID)
 	}
 	if invitation.Member2 == "" {
 		return add(id, "member2", username, "memberid2", userID)
@@ -175,8 +180,8 @@ func FetchLeaugeInvitation(id int) (LeagueInvitation, error) {
                           from league 
                           where id = '%d'`, id)
 	mu.RLock()
-	defer mu.RUnlock()
 	rows, err := DefaultDB.Query(fetch)
+	mu.RUnlock()
 	if err != nil {
 		fmt.Printf("fetch err:%s", err)
 		return ret, err

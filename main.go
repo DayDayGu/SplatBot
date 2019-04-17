@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"errors"
 	"strings"
 	// "date"
 
@@ -34,7 +35,7 @@ func main() {
 	})
 	b, err := tb.NewBot(tb.Settings{
 		// Modify Token here.
-		Token:  "828734497:AAHncNJ0penMnYm0mqfaELVSdaunVACBtF4",
+		Token:  "828734497:AAGczERxUIf2Su5hvcrVi7KBg7qd_MzKUXI",
 		Poller: middleware,
 	})
 	if err != nil {
@@ -82,9 +83,17 @@ func league(b *tb.Bot) {
 	}
 
 	cancel := tb.InlineButton{Unique: "cancel",
-		Text: "取消组排",
+		Text: "取消参与",
 	}
 
+	two := tb.InlineButton{Unique: "two",
+		Text: "立即双排"}
+
+	four := tb.InlineButton{Unique: "four",
+		Text: "立即四排"}
+
+	rightnow := tb.InlineButton{Unique: "rightnow",
+		Text: "通知发车"}
 	// 点击选择组排按钮的handler
 	b.Handle(&confirm, func(m *tb.Callback) {
 		err := AddLeagueInvitationMember(m.Message.ID, m.Sender.ID, m.Sender.Username)
@@ -92,7 +101,7 @@ func league(b *tb.Bot) {
 			fmt.Println(err)
 			return
 		}
-		updateAddMessage(b, m.Message, [][]tb.InlineButton{{confirm, cancel}})
+		updateAddMessage(b, m.Message, [][]tb.InlineButton{{confirm, cancel, rightnow}})
 	})
 
 	b.Handle(&cancel, func(m *tb.Callback) {
@@ -101,11 +110,51 @@ func league(b *tb.Bot) {
 			fmt.Println(err)
 			return
 		}
-		updateAddMessage(b, m.Message, [][]tb.InlineButton{{confirm, cancel}})
+		updateAddMessage(b, m.Message, [][]tb.InlineButton{{confirm, cancel, rightnow}})
+	})
+
+	b.Handle(&two, func(m *tb.Callback) {
+		cur, _ := currentLeague()
+		err := CreateLeagueInvitation(m.Message.ID, m.Sender.ID, m.Sender.Username, cur.Rule.Name, cur.StartTime, LeagueTypeDouble)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		updateAddMessage(b, m.Message, [][]tb.InlineButton{{confirm, cancel, rightnow}})
+
+	})
+	b.Handle(&four, func(m *tb.Callback) {
+		cur, _ := currentLeague()
+		err := CreateLeagueInvitation(m.Message.ID, m.Sender.ID, m.Sender.Username, cur.Rule.Name, cur.StartTime, LeagueTypeFour)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		updateAddMessage(b, m.Message, [][]tb.InlineButton{{confirm, cancel, rightnow}})
+	})
+
+	b.Handle(&rightnow, func(m *tb.Callback) {
+		invitation, _ := FetchLeaugeInvitation(m.Message.ID)
+		if invitation.Member1 == "" && invitation.Member2 == "" && invitation.Member3 == "" && invitation.Member4 == "" {
+			return
+		}
+		if invitation.Member1 != m.Sender.Username && invitation.Member2 != m.Sender.Username && invitation.Member3 != m.Sender.Username && invitation.Member4 != m.Sender.Username {
+			return
+		}
+
+		if invitation.Status == LeagueStatusEnd {
+			return
+		}
+
+		MarkLeagueInvitation(m.Message.ID, LeagueStatusEnd)
+
+		sendNotify(b, m.Message, invitation)
+
 	})
 	b.Handle("/league", func(m *tb.Message) {
-		leaguebtns := [][]tb.InlineButton{}
-		for k, league := range S.League {
+		leaguebtns := [][]tb.InlineButton{{two, four}}
+
+		for k, league := range futureLeague() {
 			content := fmt.Sprintf(`%s %s`, time.Unix(league.StartTime, 0).Format("15:04"), league.Rule.Name)
 			data := fmt.Sprintf("%s&&%d", league.Rule.Name, league.StartTime)
 			btn := tb.InlineButton{Text: content,
@@ -114,13 +163,13 @@ func league(b *tb.Bot) {
 			b.Handle(&btn, func(m *tb.Callback) {
 				data := strings.Split(m.Data, "&&")
 				startTime, _ := strconv.Atoi(data[1])
-				err := CreateLeagueInvitation(m.Message.ID, m.Sender.ID, m.Sender.Username, data[0], startTime)
+				err := CreateLeagueInvitation(m.Message.ID, m.Sender.ID, m.Sender.Username, data[0], int64(startTime), LeagueTypeFour)
 				if err != nil {
 					fmt.Println(err)
 					return
 				}
 				Notify(b, m.Message, int64(startTime))
-				updateAddMessage(b, m.Message, [][]tb.InlineButton{{confirm, cancel}})
+				updateAddMessage(b, m.Message, [][]tb.InlineButton{{confirm, cancel, rightnow}})
 
 			})
 			l := []tb.InlineButton{btn}
@@ -155,13 +204,34 @@ func Fetch() {
 		S = schedules
 	}
 
+	fetchSchedules()
 	tiker := time.NewTicker(time.Minute * 10)
 	go func() {
-		fetchSchedules()
 		for range tiker.C {
 			fetchSchedules()
 		}
 	}()
+}
+
+func currentLeague() (Battle, error) {
+	leagues := S.League
+	for _, league := range leagues {
+		if time.Now().Unix() > league.StartTime {
+			return league, nil
+		}
+	}
+	return Battle{}, errors.New("Can not find current league battle.")
+}
+
+func futureLeague() []Battle {
+	leagues := S.League
+	ret := []Battle{}
+	for _, league := range leagues {
+		if time.Now().Unix() < league.StartTime {
+			ret = append(ret, league)
+		}
+	}
+	return ret
 }
 
 // Notify 增加到组排时间的通知
@@ -174,35 +244,44 @@ func Notify(b *tb.Bot, m *tb.Message, des int64) {
 	go func(ch <-chan time.Time) {
 
 		<-ch
-		MarkLeagueInvitation(m.ID, LeagueStatusEnd)
 		invitation, _ := FetchLeaugeInvitation(m.ID)
 		if invitation.Member1 == "" && invitation.Member2 == "" && invitation.Member3 == "" && invitation.Member4 == "" {
 			return
 		}
 
-		body := fmt.Sprintf(`
+		if invitation.Status == LeagueStatusEnd {
+			return
+		}
+
+		MarkLeagueInvitation(m.ID, LeagueStatusEnd)
+
+		sendNotify(b, m, invitation)
+	}(time.After(time.Second * duration))
+}
+
+func sendNotify(b *tb.Bot, m *tb.Message, invitation LeagueInvitation) {
+	body := fmt.Sprintf(`
         <a>当前模式：</a><strong>%s</strong>`, invitation.Rule)
-		if invitation.Member1 != "" {
-			body += fmt.Sprintf(`
+	if invitation.Member1 != "" {
+		body += fmt.Sprintf(`
 <a href="tg://user?id=%d">@%s </a>`, invitation.MemberID1, invitation.Member1)
-		}
-		if invitation.Member2 != "" {
-			body += fmt.Sprintf(`
+	}
+	if invitation.Member2 != "" {
+		body += fmt.Sprintf(`
 <a href="tg://user?id=%d">@%s </a>`, invitation.MemberID2, invitation.Member2)
-		}
-		if invitation.Member3 != "" {
-			body += fmt.Sprintf(`
+	}
+	if invitation.Member3 != "" {
+		body += fmt.Sprintf(`
 <a href="tg://user?id=%d">@%s </a>`, invitation.MemberID3, invitation.Member3)
-		}
-		if invitation.Member4 != "" {
-			body += fmt.Sprintf(`
+	}
+	if invitation.Member4 != "" {
+		body += fmt.Sprintf(`
 <a href="tg://user?id=%d">@%s </a>`, invitation.MemberID4, invitation.Member4)
-		}
-		body += `
+	}
+	body += `
 组排啦！鸽子？不存在的!
         `
-		b.Send(m.Chat, body, tb.ModeHTML)
-	}(time.After(time.Second * duration))
+	b.Send(m.Chat, body, tb.ModeHTML)
 }
 
 // 点击加入之后刷新message
@@ -218,28 +297,40 @@ func updateAddMessage(b *tb.Bot, m *tb.Message, btns [][]tb.InlineButton) {
 	body := fmt.Sprintf(`<a>组排模式：</a><strong>%s</strong>
 <a>组排时间：</a><strong>%s</strong>
 <a>参与乌贼：</a>`, invitation.Rule, time.Unix(int64(invitation.StartTime), 0).Format("15:04"))
+
+	var count int // 统计组排人数
 	if invitation.Member1 != "" {
+		count++
 		body += fmt.Sprintf(`
 <a href="tg://user?id=%d">%s</a>`, invitation.MemberID1, invitation.Member1)
 	}
 	if invitation.Member2 != "" {
+		count++
 		body += fmt.Sprintf(`
 <a href="tg://user?id=%d">%s</a>`, invitation.MemberID2, invitation.Member2)
 	}
 	if invitation.Member3 != "" {
+		count++
 		body += fmt.Sprintf(`
 <a href="tg://user?id=%d">%s</a>`, invitation.MemberID3, invitation.Member3)
 	}
 	if invitation.Member4 != "" {
+		count++
 		body += fmt.Sprintf(`
 <a href="tg://user?id=%d">%s</a>`, invitation.MemberID4, invitation.Member4)
+	}
+
+	// 满员
+	if (invitation.Type == LeagueTypeDouble && count == 2) || (invitation.Type == LeagueTypeFour && count == 4) {
 		body += `
             <strong>车已满员,等待发车!</strong>`
-		// 若满4人，则组排成功
-		b.Edit(&msg, body, tb.ModeHTML)
-		return
+		// 满员且需要立即发车
+		if int64(invitation.StartTime) <= time.Now().Unix() {
+			b.Edit(&msg, body, tb.ModeHTML)
+			sendNotify(b, &msg, invitation)
+			return
+		}
 	}
 
 	b.Edit(&msg, body, tb.ModeHTML, markup1)
-	return
 }
