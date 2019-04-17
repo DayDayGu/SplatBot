@@ -48,9 +48,10 @@ func createLeagueTable() {
                                        memberid2 integer default 0,
                                        memberid3 integer default 0,
                                        memberid4 integer default 0,
+                                       start_time integer default 0,
                                        rule text default '',
                                        type integer default 0,
-                                       status text default '',
+                                       status integer default 0,
                                        create_date datetime default current_timestamp);`
 	_, err := DefaultDB.Exec(sql)
 	if err != nil {

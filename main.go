@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"strings"
 	// "date"
 
 	tb "gopkg.in/tucnak/telebot.v2"
@@ -16,9 +18,6 @@ import (
 
 // S Splat轮转状态
 var S Schedules
-
-// GlobalMsg 全局存储消息
-var GlobalMsg map[int]tb.Message
 
 func main() {
 	// go Update(time.Now().Unix() + int64(time.Second*5))
@@ -37,7 +36,7 @@ func main() {
 	})
 	b, err := tb.NewBot(tb.Settings{
 		// Modify Token here.
-		Token:  "828734497:AAG-IPVwnVR9viSlIYmGM7XTWDEpkSPVW04",
+		Token:  "828734497:AAHncNJ0penMnYm0mqfaELVSdaunVACBtF4",
 		Poller: middleware,
 	})
 	if err != nil {
@@ -79,7 +78,6 @@ func schedule(b *tb.Bot) {
 }
 
 func league(b *tb.Bot) {
-	GlobalMsg = map[int]tb.Message{}
 
 	confirm := tb.InlineButton{Unique: "confirm",
 		Text: "参与组排",
@@ -99,19 +97,31 @@ func league(b *tb.Bot) {
 		updateAddMessage(b, m.Message, [][]tb.InlineButton{{confirm, cancel}})
 	})
 
+	b.Handle(&cancel, func(m *tb.Callback) {
+		err := DeleteLeagueInvitationMember(m.Message.ID, m.Sender.ID)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		updateAddMessage(b, m.Message, [][]tb.InlineButton{{confirm, cancel}})
+	})
 	b.Handle("/league", func(m *tb.Message) {
 		leaguebtns := [][]tb.InlineButton{}
 		for k, league := range S.League {
 			content := fmt.Sprintf(`%s %s`, time.Unix(league.StartTime, 0).Format("15:04"), league.Rule.Name)
+			data := fmt.Sprintf("%s&&%d", league.Rule.Name, league.StartTime)
 			btn := tb.InlineButton{Text: content,
-				Data:   league.Rule.Name,
+				Data:   data,
 				Unique: strconv.Itoa(k)}
 			b.Handle(&btn, func(m *tb.Callback) {
-				err := CreateLeagueInvitation(m.Message.ID, m.Sender.ID, m.Sender.Username, m.Data)
+				data := strings.Split(m.Data, "&&")
+				startTime, _ := strconv.Atoi(data[1])
+				err := CreateLeagueInvitation(m.Message.ID, m.Sender.ID, m.Sender.Username, data[0], startTime)
 				if err != nil {
 					fmt.Println(err)
 					return
 				}
+				Notify(b, m.Message, int64(startTime))
 				updateAddMessage(b, m.Message, [][]tb.InlineButton{{confirm, cancel}})
 
 			})
@@ -120,12 +130,11 @@ func league(b *tb.Bot) {
 		}
 		markup := &tb.ReplyMarkup{InlineKeyboard: (leaguebtns)}
 		body := fmt.Sprintf(`
-<a href="tg://user?id=%d">%s %s</a>发起组排请求
+<a href="tg://user?id=%d">%s %s</a>你好，点击可以发起组排哦
         `, m.Sender.ID,
 			m.Sender.FirstName,
 			m.Sender.LastName)
-		sm, _ := b.Send(m.Chat, body, tb.ModeHTML, markup)
-		GlobalMsg[sm.ID] = *sm
+		b.Send(m.Chat, body, tb.ModeHTML, markup)
 	})
 }
 
@@ -157,18 +166,45 @@ func Fetch() {
 	}()
 }
 
-func Update(des int64) {
+// Notify 增加到组排时间的通知
+func Notify(b *tb.Bot, m *tb.Message, des int64) {
 	current := time.Now().Unix()
-
 	duration := time.Duration((des - current))
+
 	fmt.Printf("duration is %d\n", duration)
-	done := make(chan int)
+
 	go func(ch <-chan time.Time) {
-		fmt.Printf("Now is %s\n", <-ch)
-		done <- 1
-	}(time.After(duration))
-	<-done
-	close(done)
+
+		<-ch
+		MarkLeagueInvitation(m.ID, LeagueStatusEnd)
+		invitation, _ := FetchLeaugeInvitation(m.ID)
+		if invitation.Member1 == "" && invitation.Member2 == "" && invitation.Member3 == "" && invitation.Member4 == "" {
+			return
+		}
+
+		body := fmt.Sprintf(`
+        <a>当前模式：</a><strong>%s</strong>`, invitation.Rule)
+		if invitation.Member1 != "" {
+			body += fmt.Sprintf(`
+<a href="tg://user?id=%d">@%s </a>`, invitation.MemberID1, invitation.Member1)
+		}
+		if invitation.Member2 != "" {
+			body += fmt.Sprintf(`
+<a href="tg://user?id=%d">@%s </a>`, invitation.MemberID2, invitation.Member2)
+		}
+		if invitation.Member3 != "" {
+			body += fmt.Sprintf(`
+<a href="tg://user?id=%d">@%s </a>`, invitation.MemberID3, invitation.Member3)
+		}
+		if invitation.Member4 != "" {
+			body += fmt.Sprintf(`
+<a href="tg://user?id=%d">@%s </a>`, invitation.MemberID4, invitation.Member4)
+		}
+		body += `
+组排啦！鸽子？不存在的!
+        `
+		b.Send(m.Chat, body, tb.ModeHTML)
+	}(time.After(time.Second * duration))
 }
 
 // 点击加入之后刷新message
@@ -178,25 +214,27 @@ func updateAddMessage(b *tb.Bot, m *tb.Message, btns [][]tb.InlineButton) {
 		fmt.Println(err)
 		return
 	}
-	msg := GlobalMsg[int(m.ID)]
+	msg := *m
 
 	markup1 := &tb.ReplyMarkup{InlineKeyboard: btns}
-	body := ""
+	body := fmt.Sprintf(`<a>组排模式：</a><strong>%s</strong>
+<a>组排时间：</a><strong>%s</strong>
+<a>参与乌贼：</a>`, invitation.Rule, time.Unix(int64(invitation.StartTime), 0).Format("15:04"))
 	if invitation.Member1 != "" {
 		body += fmt.Sprintf(`
-<a href="tg://user?id=%d">%s</a>参与`, invitation.MemberID1, invitation.Member1)
+<a href="tg://user?id=%d">%s</a>`, invitation.MemberID1, invitation.Member1)
 	}
 	if invitation.Member2 != "" {
 		body += fmt.Sprintf(`
-<a href="tg://user?id=%d">%s</a>参与`, invitation.MemberID2, invitation.Member2)
+<a href="tg://user?id=%d">%s</a>`, invitation.MemberID2, invitation.Member2)
 	}
 	if invitation.Member3 != "" {
 		body += fmt.Sprintf(`
-<a href="tg://user?id=%d">%s</a>参与`, invitation.MemberID3, invitation.Member3)
+<a href="tg://user?id=%d">%s</a>`, invitation.MemberID3, invitation.Member3)
 	}
 	if invitation.Member4 != "" {
 		body += fmt.Sprintf(`
-<a href="tg://user?id=%d">%s</a>参与`, invitation.MemberID4, invitation.Member4)
+<a href="tg://user?id=%d">%s</a>`, invitation.MemberID4, invitation.Member4)
 		body += `
             <strong>车已满员,等待发车!</strong>`
 		// 若满4人，则组排成功
