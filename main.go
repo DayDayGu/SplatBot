@@ -20,8 +20,6 @@ import (
 var S Schedules
 
 func main() {
-	// go Update(time.Now().Unix() + int64(time.Second*5))
-
 	// 初始化用于splat数据库
 	InitDatabase()
 
@@ -31,7 +29,7 @@ func main() {
 	// 初始化bot
 	poller := &tb.LongPoller{Timeout: 10 * time.Second}
 	middleware := tb.NewMiddlewarePoller(poller, func(udp *tb.Update) bool {
-		fmt.Printf("%+v\n", udp.Message)
+		// fmt.Printf("%+v\n", udp.Message)
 		return true
 	})
 	b, err := tb.NewBot(tb.Settings{

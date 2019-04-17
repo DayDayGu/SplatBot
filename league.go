@@ -44,7 +44,7 @@ type LeagueInvitation struct {
 	CreateDate string       `json:"create_date"`
 }
 
-var mu sync.Mutex
+var mu sync.RWMutex
 
 // CreateLeagueInvitation 创建邀请
 // id msgid
@@ -68,9 +68,10 @@ func CreateLeagueInvitation(id, ownerID int, owner, rule string, startTime int) 
                            values('%d','%d', '%s', '%s', '%d', '%d')`,
 		id, ownerID, owner, rule, startTime, now)
 	mu.Lock()
+	defer mu.Unlock()
 	_, err := DefaultDB.Exec(insert)
-	mu.Unlock()
 	if err != nil {
+		fmt.Printf("create err:%s", err)
 		return err
 	}
 	return nil
@@ -82,9 +83,10 @@ func MarkLeagueInvitation(id int, status LeagueStatus) error {
 		update := fmt.Sprintf(`update league set status = '%s' where id = %d`,
 			status, id)
 		mu.Lock()
+		defer mu.Unlock()
 		_, err := DefaultDB.Exec(update)
-		mu.Unlock()
 		if err != nil {
+			fmt.Printf("mark err:%s", err)
 			return err
 		}
 		return nil
@@ -103,9 +105,10 @@ func DeleteLeagueInvitationMember(id, userID int) error {
 		update := fmt.Sprintf(`update league set %s = '',%s = 0 where id = %d`,
 			key, idkey, id)
 		mu.Lock()
+		defer mu.Unlock()
 		_, err := DefaultDB.Exec(update)
-		mu.Unlock()
 		if err != nil {
+			fmt.Printf("delete err:%s", err)
 			return err
 		}
 		in, _ := FetchLeaugeInvitation(id)
@@ -138,9 +141,10 @@ func AddLeagueInvitationMember(id, userID int, username string) error {
 		update := fmt.Sprintf(`update league set %s = '%s',%s = %d where id = %d`,
 			key, value, idkey, idvalue, id)
 		mu.Lock()
+		defer mu.Unlock()
 		_, err := DefaultDB.Exec(update)
-		mu.Unlock()
 		if err != nil {
+			fmt.Printf("add err:%s", err)
 			return err
 		}
 		return nil
@@ -170,12 +174,14 @@ func FetchLeaugeInvitation(id int) (LeagueInvitation, error) {
 	fetch := fmt.Sprintf(`select * 
                           from league 
                           where id = '%d'`, id)
-	mu.Lock()
+	mu.RLock()
+	defer mu.RUnlock()
 	rows, err := DefaultDB.Query(fetch)
-	mu.Unlock()
 	if err != nil {
+		fmt.Printf("fetch err:%s", err)
 		return ret, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err := rows.Scan(
 			&ret.ID,
