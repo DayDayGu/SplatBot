@@ -63,7 +63,7 @@ func schedule(b *tb.Bot) {
 			loc, _ := time.LoadLocation("Asia/Shanghai")
 			for _, league := range S.League {
 				ret += fmt.Sprintf(`
-<a>%s </a><strong>%s: </strong><a href="https://splatoon2.ink/assets/splatnet%s">%s</a> / <a href="https://splatoon2.ink/assets/img%s">%s</a>
+<a>%s </a><strong>%s: </strong><a href="https://splatoon2.ink/assets/splatnet%s">%s</a> / <a href="https://splatoon2.ink/assets/splatnet%s">%s</a>
                 `, time.Unix(league.StartTime, 0).In(loc).Format("15:04"),
 					league.Rule.Name,
 					league.StageA.Image,

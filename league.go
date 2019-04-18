@@ -13,9 +13,9 @@ type LeagueStatus int
 
 // LeagueStatusActive 活跃
 const (
-	LeagueStatusActive = 0
-	LeagueStatusFull   = 1
-	LeagueStatusEnd    = 2
+	LeagueStatusActive = iota
+	LeagueStatusFull
+	LeagueStatusEnd
 )
 
 // LeagueType 双排or四排
@@ -23,8 +23,8 @@ type LeagueType int
 
 // LLeagueTypeDouble 双排
 const (
-	LeagueTypeDouble = 0
-	LeagueTypeFour   = 1
+	LeagueTypeDouble = iota
+	LeagueTypeFour
 )
 
 // LeagueInvitation 邀请struct
