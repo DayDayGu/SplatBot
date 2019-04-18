@@ -60,10 +60,11 @@ func schedule(b *tb.Bot) {
 			ret := `
 
 `
+			loc, _ := time.LoadLocation("Asia/Shanghai")
 			for _, league := range S.League {
 				ret += fmt.Sprintf(`
-<a>%s </a><strong>%s: </strong><a href="https://splatoon2.ink/assets/splatnet%s">%s</a> / <a href="https://splatoon2.ink/assets/img%s">%s</a>
-                `, time.Unix(league.StartTime, 0).Format("15:04"),
+<a>%s </a><strong>%s: </strong><a href="https://splatoon2.ink/assets/splatnet%s">%s</a> / <a href="https://splatoon2.ink/assets/splatnet%s">%s</a>
+                `, time.Unix(league.StartTime, 0).In(loc).Format("15:04"),
 					league.Rule.Name,
 					league.StageA.Image,
 					league.StageA.Name,
@@ -152,11 +153,12 @@ func league(b *tb.Bot) {
 		sendNotify(b, m.Message, invitation)
 
 	})
+	loc, _ := time.LoadLocation("Asia/Shanghai")
 	b.Handle("/league", func(m *tb.Message) {
 		leaguebtns := [][]tb.InlineButton{{two, four}}
 
 		for k, league := range futureLeague() {
-			content := fmt.Sprintf(`%s %s`, time.Unix(league.StartTime, 0).Format("15:04"), league.Rule.Name)
+			content := fmt.Sprintf(`%s %s`, time.Unix(league.StartTime, 0).In(loc).Format("15:04"), league.Rule.Name)
 			data := fmt.Sprintf("%s&&%d", league.Rule.Name, league.StartTime)
 			btn := tb.InlineButton{Text: content,
 				Data:   data,
@@ -295,9 +297,11 @@ func updateAddMessage(b *tb.Bot, m *tb.Message, btns [][]tb.InlineButton) {
 	msg := *m
 
 	markup1 := &tb.ReplyMarkup{InlineKeyboard: btns}
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	startTime := time.Unix(int64(invitation.StartTime), 0).In(loc).Format("15:04")
 	body := fmt.Sprintf(`<a>组排模式：</a><strong>%s</strong>
 <a>组排时间：</a><strong>%s</strong>
-<a>参与乌贼：</a>`, invitation.Rule, time.Unix(int64(invitation.StartTime), 0).Format("15:04"))
+<a>参与乌贼：</a>`, invitation.Rule, startTime)
 
 	var count int // 统计组排人数
 	if invitation.Member1 != "" {
