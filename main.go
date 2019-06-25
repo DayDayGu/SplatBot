@@ -265,24 +265,33 @@ func Notify(b *tb.Bot, m *tb.Message, des int64) {
 func sendNotify(b *tb.Bot, m *tb.Message, invitation LeagueInvitation) {
 	body := fmt.Sprintf(`
         <a>当前模式：</a><strong>%s</strong>`, invitation.Rule)
+	var count int // 统计组排人数
 	if invitation.Member1 != "" {
+        count++
 		body += fmt.Sprintf(`
 <a href="tg://user?id=%d">@%s </a>`, invitation.MemberID1, invitation.Member1)
 	}
 	if invitation.Member2 != "" {
+        count++
 		body += fmt.Sprintf(`
 <a href="tg://user?id=%d">@%s </a>`, invitation.MemberID2, invitation.Member2)
 	}
 	if invitation.Member3 != "" {
+        count++
 		body += fmt.Sprintf(`
 <a href="tg://user?id=%d">@%s </a>`, invitation.MemberID3, invitation.Member3)
 	}
 	if invitation.Member4 != "" {
+        count++
 		body += fmt.Sprintf(`
 <a href="tg://user?id=%d">@%s </a>`, invitation.MemberID4, invitation.Member4)
 	}
+    if count == 1 {
+        body += `没人陪你组排，你还有偶像啊！`
+    } else {
 	body += `
 组排啦！鸽子？不存在的!
+    }
         `
 	b.Send(m.Chat, body, tb.ModeHTML)
 }
