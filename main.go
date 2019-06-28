@@ -219,7 +219,7 @@ func Fetch() {
 func currentLeague() (Battle, error) {
 	leagues := S.League
 	for _, league := range leagues {
-		if time.Now().Unix() > league.StartTime {
+		if time.Now().Unix() > league.StartTime || (time.Now().Unix()-league.StartTime < int64(time.Hour/time.Second*2)) {
 			return league, nil
 		}
 	}
@@ -288,12 +288,12 @@ func sendNotify(b *tb.Bot, m *tb.Message, invitation LeagueInvitation) {
 	}
 	if count == 1 {
 		body += `
-        没人陪你组排，你还有偶像啊！
-        `
+没人陪你组排，你还有偶像啊！
+`
 	} else {
 		body += `
-        组排啦！鸽子？不存在的!
-        `
+组排啦！鸽子？不存在的!
+`
 	}
 	b.Send(m.Chat, body, tb.ModeHTML)
 }
