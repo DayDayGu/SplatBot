@@ -219,7 +219,7 @@ func Fetch() {
 func currentLeague() (Battle, error) {
 	leagues := S.League
 	for _, league := range leagues {
-		if time.Now().Unix() > league.StartTime || (time.Now().Unix()-league.StartTime < int64(time.Hour/time.Second*2)) {
+		if time.Now().Unix() > league.StartTime && (time.Now().Unix()-league.StartTime < int64(time.Hour/time.Second*2)) {
 			return league, nil
 		}
 	}
