@@ -13,6 +13,7 @@ import (
 
 	"errors"
 	"strings"
+
 	// "date"
 
 	tb "gopkg.in/tucnak/telebot.v2"
@@ -48,20 +49,52 @@ func main() {
 	league(b)
 	// schedule命令
 	schedule(b)
+	// gachi命令
+	gachi(b)
 
 	// 启动bot
 	b.Start()
 }
+func gachi(b *tb.Bot) {
+	b.Handle("/gachi", func(m *tb.Message) {
+		leagues := func() string {
+			ret := `
+
+`
+			loc, _ := time.LoadLocation("Asia/Shanghai")
+			for idx, gachi := range S.Gachi {
+				if idx > 5 {
+					break
+				}
+				ret += fmt.Sprintf(`
+<a>%s </a><strong>%s: </strong><a href="https://splatoon2.ink/assets/splatnet%s">%s</a> / <a href="https://splatoon2.ink/assets/splatnet%s">%s</a>
+                `, time.Unix(gachi.StartTime, 0).In(loc).Format("15:04"),
+					gachi.Rule.Name,
+					gachi.StageA.Image,
+					gachi.StageA.Name,
+					gachi.StageB.Image,
+					gachi.StageB.Name)
+			}
+			return ret
+		}()
+		// photo := &tb.Photo{File: tb.FromDisk("006AotMogy1fyznlb4r1dj30u00u0x6p.jpg")}
+		// b.Send(m.Chat, photo)
+		b.Send(m.Chat, leagues, tb.ModeHTML)
+	})
+
+}
 
 func schedule(b *tb.Bot) {
-
 	b.Handle("/schedule", func(m *tb.Message) {
 		leagues := func() string {
 			ret := `
 
 `
 			loc, _ := time.LoadLocation("Asia/Shanghai")
-			for _, league := range S.League {
+			for idx, league := range S.League {
+				if idx > 5 {
+					break
+				}
 				ret += fmt.Sprintf(`
 <a>%s </a><strong>%s: </strong><a href="https://splatoon2.ink/assets/splatnet%s">%s</a> / <a href="https://splatoon2.ink/assets/splatnet%s">%s</a>
                 `, time.Unix(league.StartTime, 0).In(loc).Format("15:04"),
@@ -223,7 +256,7 @@ func currentLeague() (Battle, error) {
 			return league, nil
 		}
 	}
-	return Battle{}, errors.New("Can not find current league battle.")
+	return Battle{}, errors.New("Can not find current league battle")
 }
 
 func futureLeague() []Battle {

@@ -38,3 +38,13 @@ type Battle struct {
 	GameMode  GameMode `json:"game_mode"`
 	Rule      Rule     `json:"rule"`
 }
+
+// type Work struct {
+// ID        int64    `json:"id"`
+// StageA    Stage    `json:"stage_a"`
+// StageB    Stage    `json:"stage_b"`
+// EndTime   int64    `json:"end_time"`
+// StartTime int64    `json:"start_time"`
+// GameMode  GameMode `json:"game_mode"`
+// Rule      Rule     `json:"rule"`
+// }
