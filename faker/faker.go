@@ -2,7 +2,8 @@
 package faker
 
 import (
-	"fmt"
+	"image"
+	"image/jpeg"
 	"io"
 	"log"
 	"net/http"
@@ -31,5 +32,33 @@ func Download(url string, name string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println()
+}
+
+func Exist(name string) bool {
+	path, err := os.Getwd()
+	if err != nil {
+		return false
+	}
+	file := path + "/tmp/" + name
+	_, err = os.Stat(file)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
+func Get(name string) image.Image {
+	path, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	file := path + "/tmp/" + name
+	buf, err := os.Open(file)
+	defer buf.Close()
+	if err == nil {
+		return nil
+	}
+	img, _ := jpeg.Decode(buf)
+	return img
+
 }

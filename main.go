@@ -32,11 +32,10 @@ func main() {
 	// 获取Splat轮转状态
 	Fetch()
 
-	// faker.Download("http://i.imgur.com/m1UIjW1.jpg", "temp.jpg")
 	// 初始化bot
 	poller := &tb.LongPoller{Timeout: 10 * time.Second}
 	middleware := tb.NewMiddlewarePoller(poller, func(udp *tb.Update) bool {
-		// fmt.Printf("%+v\n", udp.Message)
+		fmt.Printf("%+v\n", udp.Message)
 		return true
 	})
 	b, err := tb.NewBot(tb.Settings{
@@ -55,6 +54,7 @@ func main() {
 	schedule(b)
 	// gachi命令
 	gachi(b)
+	// salmon命令
 	salmon(b)
 
 	// 启动bot
@@ -64,7 +64,7 @@ func gachi(b *tb.Bot) {
 	b.Handle("/gachi", func(m *tb.Message) {
 		leagues := func() string {
 			ret := `
-            <strong>Gachi</strong>
+<strong>Gachi</strong>
 `
 			loc, _ := time.LoadLocation("Asia/Shanghai")
 			for idx, gachi := range S.Gachi {
@@ -82,17 +82,20 @@ func gachi(b *tb.Bot) {
 			}
 			return ret
 		}()
-		// photo := &tb.Photo{File: tb.FromDisk("006AotMogy1fyznlb4r1dj30u00u0x6p.jpg")}
-		// b.Send(m.Chat, photo)
 		b.Send(m.Chat, leagues, tb.ModeHTML)
 	})
 
 }
+
 func salmon(b *tb.Bot) {
 	b.Handle("/salmon", func(m *tb.Message) {
+		// 拼接打工内容图片
+		// if len(Sa.Details) > 0 {
+		// DownloadSalmon(Sa.Details[0])
+		// }
 		salmons := func() string {
 			ret := `
-            <strong>Salmon</strong>
+<strong>Salmon</strong>
 `
 			loc, _ := time.LoadLocation("Asia/Shanghai")
 			ret += fmt.Sprintf(`
@@ -108,7 +111,7 @@ func salmon(b *tb.Bot) {
 %s`, weapon.CoopSpecialWeapon.Name)
 				} else if weapon.Weapon.Name != "" {
 					ret += fmt.Sprintf(`
-            %s
+%s
             `, weapon.Weapon.Name)
 				}
 			}
@@ -130,7 +133,7 @@ func schedule(b *tb.Bot) {
 	b.Handle("/schedule", func(m *tb.Message) {
 		leagues := func() string {
 			ret := `
-            <strong>League</strong>
+<strong>League</strong>
 `
 			loc, _ := time.LoadLocation("Asia/Shanghai")
 			for idx, league := range S.League {
@@ -358,7 +361,7 @@ func Notify(b *tb.Bot, m *tb.Message, des int64) {
 
 func sendNotify(b *tb.Bot, m *tb.Message, invitation LeagueInvitation) {
 	body := fmt.Sprintf(`
-        <a>当前模式：</a><strong>%s</strong>`, invitation.Rule)
+<a>当前模式：</a><strong>%s</strong>`, invitation.Rule)
 	var count int // 统计组排人数
 	if invitation.Member1 != "" {
 		count++
@@ -433,7 +436,7 @@ func updateAddMessage(b *tb.Bot, m *tb.Message, btns [][]tb.InlineButton) {
 	// 满员
 	if (invitation.Type == LeagueTypeDouble && count == 2) || (invitation.Type == LeagueTypeFour && count == 4) {
 		body += `
-            <strong>车已满员,等待发车!</strong>`
+<strong>车已满员,等待发车!</strong>`
 		// 满员且需要立即发车
 		if int64(invitation.StartTime) <= time.Now().Unix() {
 			b.Edit(&msg, body, tb.ModeHTML)

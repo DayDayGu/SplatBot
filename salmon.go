@@ -1,7 +1,12 @@
 // Package main provides ...
 package main
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"sync"
+
+	"github.com/PangPangPangPangPang/SplatBot/faker"
+)
 
 // UnmarshalSalmon ..
 func UnmarshalSalmon(data []byte) (Salmon, error) {
@@ -54,4 +59,48 @@ type WeaponWeapon struct {
 type Schedule struct {
 	EndTime   int64 `json:"end_time"`
 	StartTime int64 `json:"start_time"`
+}
+
+// DownloadSalmon ..
+func DownloadSalmon(detail Detail) {
+	if len(Sa.Details) < 1 {
+		return
+	}
+	var wg sync.WaitGroup
+	var url string
+	var name string
+	for _, weapon := range detail.Weapons {
+		if weapon.Weapon != nil {
+			url = "https://splatoon2.ink/assets/splatnet" + weapon.Weapon.Image
+			name = weapon.Weapon.Name
+		} else if weapon.CoopSpecialWeapon != nil {
+			url = "https://splatoon2.ink/assets/splatnet" + weapon.CoopSpecialWeapon.Image
+			name = weapon.CoopSpecialWeapon.Name
+		}
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			if !faker.Exist(url) {
+				faker.Download(url, name)
+				wg.Done()
+			}
+		}(&wg)
+	}
+	url = "https://splatoon2.ink/assets/splatnet" + detail.Stage.Image
+	name = detail.Stage.Name
+	wg.Add(1)
+	go func(wg *sync.WaitGroup) {
+		if !faker.Exist(url) {
+			faker.Download(url, name)
+			wg.Done()
+		}
+
+	}(&wg)
+	wg.Wait()
+
+	Combine(detail)
+}
+
+// Combine ..
+func Combine(detail Detail) {
+
 }
