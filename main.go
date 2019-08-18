@@ -99,7 +99,7 @@ func salmon(b *tb.Bot) {
 <strong>Duration:</strong>
 <strong>from:</strong>%s
 <strong>to:</strong>%s
-            `, time.Unix(Sa.Schedules[0].StartTime, 0).In(loc).Format("Jan 2 15:04"), time.Unix(Sa.Schedules[0].EndTime, 0).In(loc).Format("Jan 2 15:04"))
+            `, time.Unix(Sa.Details[0].StartTime, 0).In(loc).Format("Jan 2 15:04"), time.Unix(Sa.Details[0].EndTime, 0).In(loc).Format("Jan 2 15:04"))
 			ret += `
 <strong>Weapons:</strong>`
 			for _, weapon := range Sa.Details[0].Weapons {
