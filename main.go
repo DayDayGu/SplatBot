@@ -22,6 +22,9 @@ import (
 // S Splat轮转状态
 var S Schedules
 
+// Sa 打工状态
+var Sa Salmon
+
 func main() {
 	// 初始化用于splat数据库
 	InitDatabase()
@@ -29,6 +32,7 @@ func main() {
 	// 获取Splat轮转状态
 	Fetch()
 
+	// faker.Download("http://i.imgur.com/m1UIjW1.jpg", "temp.jpg")
 	// 初始化bot
 	poller := &tb.LongPoller{Timeout: 10 * time.Second}
 	middleware := tb.NewMiddlewarePoller(poller, func(udp *tb.Update) bool {
@@ -51,6 +55,7 @@ func main() {
 	schedule(b)
 	// gachi命令
 	gachi(b)
+	salmon(b)
 
 	// 启动bot
 	b.Start()
@@ -59,7 +64,7 @@ func gachi(b *tb.Bot) {
 	b.Handle("/gachi", func(m *tb.Message) {
 		leagues := func() string {
 			ret := `
-
+            <strong>Gachi</strong>
 `
 			loc, _ := time.LoadLocation("Asia/Shanghai")
 			for idx, gachi := range S.Gachi {
@@ -83,12 +88,49 @@ func gachi(b *tb.Bot) {
 	})
 
 }
+func salmon(b *tb.Bot) {
+	b.Handle("/salmon", func(m *tb.Message) {
+		salmons := func() string {
+			ret := `
+            <strong>Salmon</strong>
+`
+			loc, _ := time.LoadLocation("Asia/Shanghai")
+			ret += fmt.Sprintf(`
+<strong>Duration:</strong>
+<strong>from:</strong>%s
+<strong>to:</strong>%s
+            `, time.Unix(Sa.Schedules[0].StartTime, 0).In(loc).Format("Jan 2 15:04"), time.Unix(Sa.Schedules[0].EndTime, 0).In(loc).Format("Jan 2 15:04"))
+			ret += `
+<strong>Weapons:</strong>`
+			for _, weapon := range Sa.Details[0].Weapons {
+				if weapon.CoopSpecialWeapon.Name != "" {
+					ret += fmt.Sprintf(`
+%s`, weapon.CoopSpecialWeapon.Name)
+				} else if weapon.Weapon.Name != "" {
+					ret += fmt.Sprintf(`
+            %s
+            `, weapon.Weapon.Name)
+				}
+			}
+			if Sa.Details[0].Stage.Name != "" {
+				ret += fmt.Sprintf(`
+
+<strong>Stage:</strong>
+<a href="https://splatoon2.ink/assets/splatnet%s">%s</a>
+                `, Sa.Details[0].Stage.Image, Sa.Details[0].Stage.Name)
+			}
+			return ret
+		}()
+		b.Send(m.Chat, salmons, tb.ModeHTML)
+	})
+
+}
 
 func schedule(b *tb.Bot) {
 	b.Handle("/schedule", func(m *tb.Message) {
 		leagues := func() string {
 			ret := `
-
+            <strong>League</strong>
 `
 			loc, _ := time.LoadLocation("Asia/Shanghai")
 			for idx, league := range S.League {
@@ -240,10 +282,29 @@ func Fetch() {
 		S = schedules
 	}
 
+	fetchSalmon := func() {
+		resp, err := http.Get("https://splatoon2.ink/data/coop-schedules.json")
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		body, _ := ioutil.ReadAll(resp.Body)
+		defer resp.Body.Close()
+		ret, err := UnmarshalSalmon(body)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		Sa = ret
+	}
+
+	fetchSalmon()
 	fetchSchedules()
+
 	tiker := time.NewTicker(time.Minute * 10)
 	go func() {
 		for range tiker.C {
+			fetchSalmon()
 			fetchSchedules()
 		}
 	}()
