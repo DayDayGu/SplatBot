@@ -3,7 +3,13 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
 	"sync"
+
+	"image"
+	"image/draw"
+	"image/png"
 
 	"github.com/PangPangPangPangPang/SplatBot/faker"
 )
@@ -67,26 +73,18 @@ func DownloadSalmon(detail Detail) {
 		return
 	}
 	var wg sync.WaitGroup
-	var url string
-	var name string
 	for _, weapon := range detail.Weapons {
-		if weapon.Weapon != nil {
-			url = "https://splatoon2.ink/assets/splatnet" + weapon.Weapon.Image
-			name = weapon.Weapon.Name
-		} else if weapon.CoopSpecialWeapon != nil {
-			url = "https://splatoon2.ink/assets/splatnet" + weapon.CoopSpecialWeapon.Image
-			name = weapon.CoopSpecialWeapon.Name
-		}
+		weaponURL, weaponName := weaponConfig(weapon)
 		wg.Add(1)
 		go func(wg *sync.WaitGroup) {
-			if !faker.Exist(url) {
-				faker.Download(url, name)
+			if !faker.Exist(weaponURL) {
+				faker.Download(weaponURL, weaponName)
 				wg.Done()
 			}
 		}(&wg)
 	}
-	url = "https://splatoon2.ink/assets/splatnet" + detail.Stage.Image
-	name = detail.Stage.Name
+	url := "https://splatoon2.ink/assets/splatnet" + detail.Stage.Image
+	name := detail.Stage.Name
 	wg.Add(1)
 	go func(wg *sync.WaitGroup) {
 		if !faker.Exist(url) {
@@ -100,7 +98,44 @@ func DownloadSalmon(detail Detail) {
 	Combine(detail)
 }
 
+func weaponConfig(weapon WeaponElement) (url string, name string) {
+	var weaponURL string
+	var weaponName string
+	if weapon.Weapon != nil {
+		weaponURL = "https://splatoon2.ink/assets/splatnet" + weapon.Weapon.Image
+		weaponName = weapon.Weapon.Name
+	} else if weapon.CoopSpecialWeapon != nil {
+		weaponURL = "https://splatoon2.ink/assets/splatnet" + weapon.CoopSpecialWeapon.Image
+		weaponName = weapon.CoopSpecialWeapon.Name
+	}
+	return weaponURL, weaponName
+}
+
 // Combine ..
 func Combine(detail Detail) {
+	bg := faker.Get(detail.Stage.Name)
+	if bg == nil {
+		return
+	}
+	bounds := bg.Bounds()
+	ret := image.NewRGBA(bounds)
+	draw.Draw(ret, bounds, bg, image.ZP, draw.Src)
+	for idx, weapon := range detail.Weapons {
+		_, weaponName := weaponConfig(weapon)
+		if faker.Exist(weaponName) {
+			weaponImage := faker.Get(weaponName)
+			weaponBounds := weaponImage.Bounds().Min.Add(image.Point{-100 * idx, 0})
+			draw.Draw(ret, bounds, weaponImage, weaponBounds, draw.Src)
+		}
+	}
+	path, _ := os.Getwd()
+	fp := fmt.Sprintf(`%s/tmp/%d`, path, detail.StartTime)
+	f, err := os.Create(fp)
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println(fp)
+	}
+	defer f.Close()
+	png.Encode(f, ret)
 
 }

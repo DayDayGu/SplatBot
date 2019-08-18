@@ -16,6 +16,7 @@ import (
 
 	// "date"
 
+	"github.com/PangPangPangPangPang/SplatBot/faker"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -89,10 +90,16 @@ func gachi(b *tb.Bot) {
 
 func salmon(b *tb.Bot) {
 	b.Handle("/salmon", func(m *tb.Message) {
-		// 拼接打工内容图片
-		// if len(Sa.Details) > 0 {
-		// DownloadSalmon(Sa.Details[0])
-		// }
+
+		// var img image.Image
+		if faker.Exist(fmt.Sprintf("%d", Sa.Details[0].StartTime)) {
+			path, _ := os.Getwd()
+			photo := &tb.Photo{File: tb.FromDisk(fmt.Sprintf("%s/tmp/%d", path, Sa.Details[0].StartTime))}
+			b.Send(m.Chat, photo)
+		} else if len(Sa.Details) > 0 {
+			// 拼接打工内容图片
+			DownloadSalmon(Sa.Details[0])
+		}
 		salmons := func() string {
 			ret := `
 <strong>Salmon</strong>

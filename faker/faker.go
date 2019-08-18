@@ -3,7 +3,7 @@ package faker
 
 import (
 	"image"
-	"image/jpeg"
+	"image/png"
 	"io"
 	"log"
 	"net/http"
@@ -55,10 +55,10 @@ func Get(name string) image.Image {
 	file := path + "/tmp/" + name
 	buf, err := os.Open(file)
 	defer buf.Close()
-	if err == nil {
+	if err != nil {
 		return nil
 	}
-	img, _ := jpeg.Decode(buf)
+	img, _ := png.Decode(buf)
 	return img
 
 }
