@@ -6,12 +6,19 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
+
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/basicfont"
+	"golang.org/x/image/math/fixed"
 
 	"image"
+	"image/color"
 	"image/draw"
 	"image/png"
 
 	"github.com/PangPangPangPangPang/SplatBot/faker"
+	"github.com/nfnt/resize"
 )
 
 // UnmarshalSalmon ..
@@ -114,20 +121,39 @@ func weaponConfig(weapon WeaponElement) (url string, name string) {
 // Combine ..
 func Combine(detail Detail) {
 	bg := faker.Get(detail.Stage.Name)
+	bg = resize.Resize(380, 380*180/320, bg, resize.NearestNeighbor)
 	if bg == nil {
 		return
 	}
-	bounds := bg.Bounds()
-	ret := image.NewRGBA(bounds)
-	draw.Draw(ret, bounds, bg, image.ZP, draw.Src)
+	width := 400
+	height := 400
+	ret := image.NewRGBA(image.Rect(0, 0, 400, 400))
+	// Set color for each pixel.
+
+	cyan := color.RGBA{251, 89, 4, 0xff}
+	for x := 0; x < width; x++ {
+		for y := 0; y < height; y++ {
+			ret.Set(x, y, cyan)
+		}
+	}
+	bg1 := faker.Get("bg.png")
+	bg1 = resize.Resize(400, 400, bg1, resize.NearestNeighbor)
+	draw.Draw(ret, ret.Bounds(), bg1, image.ZP, draw.Over)
+	// draw.Draw(ret, image.Rect(0, 0, 400, 400), backgroundColor, image.ZP, draw.Src)
+	draw.Draw(ret, ret.Bounds().Add(image.Point{10, 90}), bg, image.ZP, draw.Over)
 	for idx, weapon := range detail.Weapons {
 		_, weaponName := weaponConfig(weapon)
 		if faker.Exist(weaponName) {
 			weaponImage := faker.Get(weaponName)
-			weaponBounds := weaponImage.Bounds().Min.Add(image.Point{-100 * idx, 0})
-			draw.Draw(ret, bounds, weaponImage, weaponBounds, draw.Src)
+			weaponImage = resize.Resize(80, 80, weaponImage, resize.NearestNeighbor)
+			// weaponPoints := weaponImage.Bounds().Min.Add(image.Point{100, 100 * idx})
+			point := image.Pt(100*idx+10, 0)
+			draw.Draw(ret, ret.Bounds().Add(point), weaponImage, weaponImage.Bounds().Min, draw.Over)
 		}
 	}
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	addLabel(ret, 10, 350, fmt.Sprintf(`From: %s `, time.Unix(detail.StartTime, 0).In(loc).Format("Jan 2 15:04")))
+	addLabel(ret, 10, 370, fmt.Sprintf(`To: %s`, time.Unix(detail.EndTime, 0).In(loc).Format("Jan 2 15:04")))
 	path, _ := os.Getwd()
 	fp := fmt.Sprintf(`%s/tmp/%d`, path, detail.StartTime)
 	f, err := os.Create(fp)
@@ -138,4 +164,16 @@ func Combine(detail Detail) {
 	defer f.Close()
 	png.Encode(f, ret)
 
+}
+func addLabel(img *image.RGBA, x, y int, label string) {
+	col := color.RGBA{0, 0, 0, 255}
+	point := fixed.Point26_6{fixed.Int26_6(x * 64), fixed.Int26_6(y * 64)}
+
+	d := &font.Drawer{
+		Dst:  img,
+		Src:  image.NewUniform(col),
+		Face: basicfont.Face7x13,
+		Dot:  point,
+	}
+	d.DrawString(label)
 }

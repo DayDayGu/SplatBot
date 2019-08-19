@@ -91,14 +91,21 @@ func gachi(b *tb.Bot) {
 func salmon(b *tb.Bot) {
 	b.Handle("/salmon", func(m *tb.Message) {
 
-		// var img image.Image
 		if faker.Exist(fmt.Sprintf("%d", Sa.Details[0].StartTime)) {
-			path, _ := os.Getwd()
-			photo := &tb.Photo{File: tb.FromDisk(fmt.Sprintf("%s/tmp/%d", path, Sa.Details[0].StartTime))}
-			b.Send(m.Chat, photo)
+			go func() {
+				DownloadSalmon(Sa.Details[0])
+				path, _ := os.Getwd()
+				photo := &tb.Photo{File: tb.FromDisk(fmt.Sprintf("%s/tmp/%d", path, Sa.Details[0].StartTime))}
+				b.Send(m.Chat, photo)
+			}()
 		} else if len(Sa.Details) > 0 {
 			// 拼接打工内容图片
-			DownloadSalmon(Sa.Details[0])
+			go func() {
+				DownloadSalmon(Sa.Details[0])
+				path, _ := os.Getwd()
+				photo := &tb.Photo{File: tb.FromDisk(fmt.Sprintf("%s/tmp/%d", path, Sa.Details[0].StartTime))}
+				b.Send(m.Chat, photo)
+			}()
 		}
 		salmons := func() string {
 			ret := `
@@ -113,10 +120,10 @@ func salmon(b *tb.Bot) {
 			ret += `
 <strong>Weapons:</strong>`
 			for _, weapon := range Sa.Details[0].Weapons {
-				if weapon.CoopSpecialWeapon.Name != "" {
+				if weapon.CoopSpecialWeapon != nil {
 					ret += fmt.Sprintf(`
 %s`, weapon.CoopSpecialWeapon.Name)
-				} else if weapon.Weapon.Name != "" {
+				} else if weapon.Weapon != nil {
 					ret += fmt.Sprintf(`
 %s
             `, weapon.Weapon.Name)
