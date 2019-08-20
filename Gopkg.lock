@@ -39,12 +39,10 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:09c175055d303dadf3f82513c66e6da0b95ba22bc8e5d267a2674d16d95ea77a"
+  digest = "1:6d674a768fd27ad126eb8357ebbc14cb5b000badd62d4b7cbe403abb231e099e"
   name = "golang.org/x/image"
   packages = [
     "font",
-    "font/basicfont",
-    "font/plan9font",
     "math/fixed",
   ]
   pruneopts = "UT"
@@ -66,8 +64,6 @@
     "github.com/mattn/go-sqlite3",
     "github.com/nfnt/resize",
     "golang.org/x/image/font",
-    "golang.org/x/image/font/basicfont",
-    "golang.org/x/image/math/fixed",
     "gopkg.in/tucnak/telebot.v2",
   ]
   solver-name = "gps-cdcl"

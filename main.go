@@ -26,6 +26,8 @@ var S Schedules
 // Sa 打工状态
 var Sa Salmon
 
+var SalmonMap map[string][]byte
+
 func main() {
 	// 初始化用于splat数据库
 	InitDatabase()
@@ -129,9 +131,21 @@ func salmonRaw(b *tb.Bot) {
 func salmon(b *tb.Bot) {
 	b.Handle("/salmon", func(m *tb.Message) {
 		show := func() {
-			path, _ := os.Getwd()
-			photo := &tb.Photo{File: tb.FromDisk(fmt.Sprintf("%s/tmp/%d", path, Sa.Details[0].StartTime))}
+			path := fmt.Sprintf("%s%d", faker.TempPath(), Sa.Details[0].StartTime)
+			var file tb.File
+			if SalmonMap[path] != nil {
+				err := json.Unmarshal(SalmonMap[path], &file)
+				if err != nil {
+					return
+				}
+			} else {
+				file = tb.FromDisk(path)
+			}
+			photo := &tb.Photo{File: file}
 			b.Send(m.Chat, photo)
+
+			bytes, _ := json.Marshal(file)
+			SalmonMap[path] = bytes
 		}
 		if faker.Exist(fmt.Sprintf("%d", Sa.Details[0].StartTime)) {
 			go func() {

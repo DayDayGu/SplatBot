@@ -24,7 +24,7 @@ func init() {
 	}
 }
 
-func tempPath() string {
+func TempPath() string {
 	path, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
@@ -48,7 +48,7 @@ func Download(url string, name string) {
 	}
 	defer response.Body.Close()
 
-	file, err := os.Create(tempPath() + name)
+	file, err := os.Create(TempPath() + name)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -62,7 +62,7 @@ func Download(url string, name string) {
 
 func Exist(name string) bool {
 
-	file := tempPath() + name
+	file := TempPath() + name
 	_, err := os.Stat(file)
 	if os.IsNotExist(err) {
 		return false
@@ -71,7 +71,7 @@ func Exist(name string) bool {
 }
 
 func Get(name string) image.Image {
-	file := tempPath() + name
+	file := TempPath() + name
 	buf, err := os.Open(file)
 	defer buf.Close()
 	if err != nil {
