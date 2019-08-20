@@ -62,3 +62,18 @@ func Get(name string) image.Image {
 	return img
 
 }
+func GetResrc(name string) image.Image {
+	path, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	file := path + "/resource/" + name
+	buf, err := os.Open(file)
+	defer buf.Close()
+	if err != nil {
+		return nil
+	}
+	img, _ := png.Decode(buf)
+	return img
+
+}

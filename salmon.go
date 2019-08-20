@@ -3,14 +3,16 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"math"
 	"os"
 	"sync"
 	"time"
 
 	"golang.org/x/image/font"
-	"golang.org/x/image/font/basicfont"
-	"golang.org/x/image/math/fixed"
 
 	"image"
 	"image/color"
@@ -18,6 +20,7 @@ import (
 	"image/png"
 
 	"github.com/PangPangPangPangPang/SplatBot/faker"
+	"github.com/golang/freetype"
 	"github.com/nfnt/resize"
 )
 
@@ -105,6 +108,26 @@ func DownloadSalmon(detail Detail) {
 	Combine(detail)
 }
 
+type circle struct {
+	p image.Point
+	r int
+}
+
+func (c *circle) ColorModel() color.Model {
+	return color.AlphaModel
+}
+
+func (c *circle) Bounds() image.Rectangle {
+	return image.Rect(c.p.X-c.r, c.p.Y-c.r, c.p.X+c.r, c.p.Y+c.r)
+}
+
+func (c *circle) At(x, y int) color.Color {
+	xx, yy, rr := float64(x-c.p.X)+0.5, float64(y-c.p.Y)+0.5, float64(c.r)
+	if xx*xx+yy*yy < rr*rr {
+		return color.Alpha{255}
+	}
+	return color.Alpha{0}
+}
 func weaponConfig(weapon WeaponElement) (url string, name string) {
 	var weaponURL string
 	var weaponName string
@@ -120,40 +143,44 @@ func weaponConfig(weapon WeaponElement) (url string, name string) {
 
 // Combine ..
 func Combine(detail Detail) {
-	bg := faker.Get(detail.Stage.Name)
-	bg = resize.Resize(380, 380*180/320, bg, resize.NearestNeighbor)
-	if bg == nil {
-		return
-	}
-	width := 400
-	height := 400
-	ret := image.NewRGBA(image.Rect(0, 0, 400, 400))
-	// Set color for each pixel.
+	width := 660
+	height := 660
+	ret := image.NewRGBA(image.Rect(0, 0, width, height))
 
-	cyan := color.RGBA{251, 89, 4, 0xff}
+	// Set color for each pixel.
+	bgColor := color.RGBA{251, 89, 4, 0xff}
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
-			ret.Set(x, y, cyan)
+			ret.Set(x, y, bgColor)
 		}
 	}
-	bg1 := faker.Get("bg.png")
-	bg1 = resize.Resize(400, 400, bg1, resize.NearestNeighbor)
-	draw.Draw(ret, ret.Bounds(), bg1, image.ZP, draw.Over)
-	// draw.Draw(ret, image.Rect(0, 0, 400, 400), backgroundColor, image.ZP, draw.Src)
-	draw.Draw(ret, ret.Bounds().Add(image.Point{10, 90}), bg, image.ZP, draw.Over)
+
+	bgImg := faker.GetResrc("bg.png")
+	bgImg = resize.Resize(uint(width), uint(height), bgImg, resize.NearestNeighbor)
+	draw.Draw(ret, ret.Bounds(), bgImg, image.ZP, draw.Over)
+
+	stage := faker.Get(detail.Stage.Name)
+	// stage = resize.Resize(640, 360, stage, resize.NearestNeighbor)
+	stage = circleMask(stage, 20)
+	if stage == nil {
+		return
+	}
+	draw.Draw(ret, ret.Bounds().Add(image.Point{10, 150}), stage, image.ZP, draw.Over)
+
 	for idx, weapon := range detail.Weapons {
 		_, weaponName := weaponConfig(weapon)
 		if faker.Exist(weaponName) {
 			weaponImage := faker.Get(weaponName)
-			weaponImage = resize.Resize(80, 80, weaponImage, resize.NearestNeighbor)
-			// weaponPoints := weaponImage.Bounds().Min.Add(image.Point{100, 100 * idx})
-			point := image.Pt(100*idx+10, 0)
+			weaponImage = resize.Resize(150, 150, weaponImage, resize.NearestNeighbor)
+			point := image.Pt(150*idx+30, 0)
 			draw.Draw(ret, ret.Bounds().Add(point), weaponImage, weaponImage.Bounds().Min, draw.Over)
 		}
 	}
+
 	loc, _ := time.LoadLocation("Asia/Shanghai")
-	addLabel(ret, 10, 350, fmt.Sprintf(`From: %s `, time.Unix(detail.StartTime, 0).In(loc).Format("Jan 2 15:04")))
-	addLabel(ret, 10, 370, fmt.Sprintf(`To: %s`, time.Unix(detail.EndTime, 0).In(loc).Format("Jan 2 15:04")))
+	fontRender(ret, 10, height-90, fmt.Sprintf(`From: %s `, time.Unix(detail.StartTime, 0).In(loc).Format("Jan 2 15:04")))
+	fontRender(ret, 10, height-30, fmt.Sprintf(`To: %s`, time.Unix(detail.EndTime, 0).In(loc).Format("Jan 2 15:04")))
+
 	path, _ := os.Getwd()
 	fp := fmt.Sprintf(`%s/tmp/%d`, path, detail.StartTime)
 	f, err := os.Create(fp)
@@ -165,15 +192,84 @@ func Combine(detail Detail) {
 	png.Encode(f, ret)
 
 }
-func addLabel(img *image.RGBA, x, y int, label string) {
-	col := color.RGBA{0, 0, 0, 255}
-	point := fixed.Point26_6{fixed.Int26_6(x * 64), fixed.Int26_6(y * 64)}
 
-	d := &font.Drawer{
-		Dst:  img,
-		Src:  image.NewUniform(col),
-		Face: basicfont.Face7x13,
-		Dot:  point,
+func circleMask(img image.Image, d int) image.Image {
+
+	ret := image.NewRGBA(img.Bounds())
+	X := img.Bounds().Max.X
+	Y := img.Bounds().Max.Y
+	for x := 0; x < X; x++ {
+		for y := 0; y < Y; y++ {
+			if x < d && y < d && Distance(x, y, d, d) > float64(d) {
+				ret.Set(x, y, color.RGBA{255, 255, 255, 0})
+			} else if X-x < d && y < d && Distance(X-x, y, d, d) > float64(d) {
+				ret.Set(x, y, color.RGBA{255, 255, 255, 0})
+			} else if x < d && Y-y < d && Distance(x, Y-y, d, d) > float64(d) {
+				ret.Set(x, y, color.RGBA{255, 255, 255, 0})
+			} else if X-x < d && Y-y < d && Distance(X-x, Y-y, d, d) > float64(d) {
+				ret.Set(x, y, color.RGBA{255, 255, 255, 0})
+			} else {
+				ret.Set(x, y, img.At(x, y))
+
+			}
+
+		}
 	}
-	d.DrawString(label)
+
+	return ret
+}
+
+func Distance(x1, y1, x2, y2 int) float64 {
+	first := math.Pow(float64(x2-x1), 2)
+	second := math.Pow(float64(y2-y1), 2)
+	return math.Sqrt(first + second)
+}
+
+var (
+	dpi = flag.Float64("dpi", 72, "screen resolution in Dots Per Inch")
+	// fontfile = flag.String("fontfile", "/Users/zhiliao/Downloads/ffffonts/simsun.ttf", "filename of the ttf font")
+	fontfile = flag.String("fontfile", "./resource/BenMoZhuHei-2.ttf", "BenMoZhuHei")
+	hinting  = flag.String("hinting", "none", "none | full")
+	size     = flag.Float64("size", 40, "font size in points")
+	spacing  = flag.Float64("spacing", 1.5, "line spacing (e.g. 2 means double spaced)")
+	wonb     = flag.Bool("whiteonblack", false, "white text on a black background")
+)
+
+func fontRender(jpg *image.RGBA, x int, y int, text string) {
+	flag.Parse()
+	fontBytes, err := ioutil.ReadFile(*fontfile)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	f, err := freetype.ParseFont(fontBytes)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	c := freetype.NewContext()
+	c.SetDPI(*dpi)
+	c.SetFont(f)
+	c.SetFontSize(*size)
+	c.SetClip(jpg.Bounds())
+	c.SetDst(jpg)
+	fg := image.Opaque
+	c.SetSrc(fg)
+
+	switch *hinting {
+	default:
+		c.SetHinting(font.HintingNone)
+	case "full":
+		c.SetHinting(font.HintingFull)
+	}
+
+	pt := freetype.Pt(x, y)
+	_, err = c.DrawString(text, pt)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	pt.Y += c.PointToFixed(*size * *spacing)
+
 }

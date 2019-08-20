@@ -57,6 +57,7 @@ func main() {
 	gachi(b)
 	// salmon命令
 	salmon(b)
+	salmonRaw(b)
 
 	// 启动bot
 	b.Start()
@@ -87,26 +88,8 @@ func gachi(b *tb.Bot) {
 	})
 
 }
-
-func salmon(b *tb.Bot) {
-	b.Handle("/salmon", func(m *tb.Message) {
-
-		if faker.Exist(fmt.Sprintf("%d", Sa.Details[0].StartTime)) {
-			go func() {
-				DownloadSalmon(Sa.Details[0])
-				path, _ := os.Getwd()
-				photo := &tb.Photo{File: tb.FromDisk(fmt.Sprintf("%s/tmp/%d", path, Sa.Details[0].StartTime))}
-				b.Send(m.Chat, photo)
-			}()
-		} else if len(Sa.Details) > 0 {
-			// 拼接打工内容图片
-			go func() {
-				DownloadSalmon(Sa.Details[0])
-				path, _ := os.Getwd()
-				photo := &tb.Photo{File: tb.FromDisk(fmt.Sprintf("%s/tmp/%d", path, Sa.Details[0].StartTime))}
-				b.Send(m.Chat, photo)
-			}()
-		}
+func salmonRaw(b *tb.Bot) {
+	b.Handle("/salmonraw", func(m *tb.Message) {
 		salmons := func() string {
 			ret := `
 <strong>Salmon</strong>
@@ -139,6 +122,27 @@ func salmon(b *tb.Bot) {
 			return ret
 		}()
 		b.Send(m.Chat, salmons, tb.ModeHTML)
+	})
+}
+
+func salmon(b *tb.Bot) {
+	b.Handle("/salmon", func(m *tb.Message) {
+		show := func() {
+			path, _ := os.Getwd()
+			photo := &tb.Photo{File: tb.FromDisk(fmt.Sprintf("%s/tmp/%d", path, Sa.Details[0].StartTime))}
+			b.Send(m.Chat, photo)
+		}
+		if faker.Exist(fmt.Sprintf("%d", Sa.Details[0].StartTime)) {
+			go func() {
+				show()
+			}()
+		} else if len(Sa.Details) > 0 {
+			// 拼接打工内容图片
+			go func() {
+				DownloadSalmon(Sa.Details[0])
+				show()
+			}()
+		}
 	})
 
 }
