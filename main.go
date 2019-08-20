@@ -32,6 +32,7 @@ func main() {
 
 	// 获取Splat轮转状态
 	Fetch()
+	// DownloadSalmon(Sa.Details[0])
 
 	// 初始化bot
 	poller := &tb.LongPoller{Timeout: 10 * time.Second}

@@ -8,6 +8,8 @@
 SplatBot
 debug
 tmp/*
+.DS_Store
+.idea/
 
 # Test binary, build with `go test -c`
 *.test

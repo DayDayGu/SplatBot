@@ -178,8 +178,8 @@ func Combine(detail Detail) {
 	}
 
 	loc, _ := time.LoadLocation("Asia/Shanghai")
-	fontRender(ret, 10, height-90, fmt.Sprintf(`From: %s `, time.Unix(detail.StartTime, 0).In(loc).Format("Jan 2 15:04")))
-	fontRender(ret, 10, height-30, fmt.Sprintf(`To: %s`, time.Unix(detail.EndTime, 0).In(loc).Format("Jan 2 15:04")))
+	fontRender(ret, 10, height-90, fmt.Sprintf(`From: %s `, time.Unix(detail.StartTime, 0).In(loc).Format("Jan 2 15:04 Mon")))
+	fontRender(ret, 10, height-30, fmt.Sprintf(`To: %s`, time.Unix(detail.EndTime, 0).In(loc).Format("Jan 2 15:04 Mon")))
 
 	path, _ := os.Getwd()
 	fp := fmt.Sprintf(`%s/tmp/%d`, path, detail.StartTime)
@@ -200,13 +200,13 @@ func circleMask(img image.Image, d int) image.Image {
 	Y := img.Bounds().Max.Y
 	for x := 0; x < X; x++ {
 		for y := 0; y < Y; y++ {
-			if x < d && y < d && Distance(x, y, d, d) > float64(d) {
+			if x < d && y < d && distance(x, y, d, d) > float64(d) {
 				ret.Set(x, y, color.RGBA{255, 255, 255, 0})
-			} else if X-x < d && y < d && Distance(X-x, y, d, d) > float64(d) {
+			} else if X-x < d && y < d && distance(X-x, y, d, d) > float64(d) {
 				ret.Set(x, y, color.RGBA{255, 255, 255, 0})
-			} else if x < d && Y-y < d && Distance(x, Y-y, d, d) > float64(d) {
+			} else if x < d && Y-y < d && distance(x, Y-y, d, d) > float64(d) {
 				ret.Set(x, y, color.RGBA{255, 255, 255, 0})
-			} else if X-x < d && Y-y < d && Distance(X-x, Y-y, d, d) > float64(d) {
+			} else if X-x < d && Y-y < d && distance(X-x, Y-y, d, d) > float64(d) {
 				ret.Set(x, y, color.RGBA{255, 255, 255, 0})
 			} else {
 				ret.Set(x, y, img.At(x, y))
@@ -219,7 +219,7 @@ func circleMask(img image.Image, d int) image.Image {
 	return ret
 }
 
-func Distance(x1, y1, x2, y2 int) float64 {
+func distance(x1, y1, x2, y2 int) float64 {
 	first := math.Pow(float64(x2-x1), 2)
 	second := math.Pow(float64(y2-y1), 2)
 	return math.Sqrt(first + second)

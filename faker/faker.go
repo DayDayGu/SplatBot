@@ -10,19 +10,45 @@ import (
 	"os"
 )
 
-// Download download file
-func Download(url string, name string) {
+func init() {
+
 	path, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	path += "/tmp/"
+	_, err = os.Stat(path)
+	if os.IsNotExist(err) {
+		os.Mkdir(path, os.ModePerm)
+	}
+}
+
+func tempPath() string {
+	path, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return path + "/tmp/"
+}
+
+func resourcePath() string {
+	path, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return path + "/resource/"
+}
+
+// Download download file
+func Download(url string, name string) {
 	response, err := http.Get(url)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer response.Body.Close()
 
-	file, err := os.Create(path + "/tmp/" + name)
+	file, err := os.Create(tempPath() + name)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,12 +61,9 @@ func Download(url string, name string) {
 }
 
 func Exist(name string) bool {
-	path, err := os.Getwd()
-	if err != nil {
-		return false
-	}
-	file := path + "/tmp/" + name
-	_, err = os.Stat(file)
+
+	file := tempPath() + name
+	_, err := os.Stat(file)
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -48,11 +71,7 @@ func Exist(name string) bool {
 }
 
 func Get(name string) image.Image {
-	path, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-	file := path + "/tmp/" + name
+	file := tempPath() + name
 	buf, err := os.Open(file)
 	defer buf.Close()
 	if err != nil {
@@ -63,11 +82,7 @@ func Get(name string) image.Image {
 
 }
 func GetResrc(name string) image.Image {
-	path, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-	file := path + "/resource/" + name
+	file := resourcePath() + name
 	buf, err := os.Open(file)
 	defer buf.Close()
 	if err != nil {
