@@ -26,7 +26,7 @@ var S Schedules
 // Sa 打工状态
 var Sa Salmon
 
-var SalmonMap map[string][]byte
+var SalmonMap map[string][]byte = make(map[string][]byte)
 
 func main() {
 	// 初始化用于splat数据库
@@ -132,19 +132,19 @@ func salmon(b *tb.Bot) {
 	b.Handle("/salmon", func(m *tb.Message) {
 		show := func() {
 			path := fmt.Sprintf("%s%d", faker.TempPath(), Sa.Details[0].StartTime)
-			var file tb.File
+			var photo *tb.Photo
 			if SalmonMap[path] != nil {
-				err := json.Unmarshal(SalmonMap[path], &file)
+				err := json.Unmarshal(SalmonMap[path], &photo)
 				if err != nil {
 					return
 				}
 			} else {
-				file = tb.FromDisk(path)
+				file := tb.FromDisk(path)
+				photo = &tb.Photo{File: file}
 			}
-			photo := &tb.Photo{File: file}
 			b.Send(m.Chat, photo)
 
-			bytes, _ := json.Marshal(file)
+			bytes, _ := json.Marshal(photo)
 			SalmonMap[path] = bytes
 		}
 		if faker.Exist(fmt.Sprintf("%d", Sa.Details[0].StartTime)) {
