@@ -3,7 +3,7 @@ FROM golang:latest
 RUN go env
 
 # Bot Token
-ENV SPLAT_BOT_TOKEN 
+ENV SPLAT_BOT_TOKEN 828734497:AAGczERxUIf2Su5hvcrVi7KBg7qd_MzKUXI
 # 打包为release
 ENV SPLAT_ENV release 
 
