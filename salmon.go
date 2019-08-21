@@ -178,8 +178,8 @@ func Combine(detail Detail) {
 	}
 
 	loc, _ := time.LoadLocation("Asia/Shanghai")
-	fontRender(ret, 10, height-90, fmt.Sprintf(`From: %s `, time.Unix(detail.StartTime, 0).In(loc).Format("Jan 2 15:04 Mon")))
-	fontRender(ret, 10, height-30, fmt.Sprintf(`To: %s`, time.Unix(detail.EndTime, 0).In(loc).Format("Jan 2 15:04 Mon")))
+	fontRender(ret, 10, height-90, fmt.Sprintf(`From: %s `, time.Unix(detail.StartTime, 0).In(loc).Format("01-02 Mon 15:04")))
+	fontRender(ret, 10, height-30, fmt.Sprintf(`To: %s`, time.Unix(detail.EndTime, 0).In(loc).Format("01-02 Mon 15:04")))
 
 	path, _ := os.Getwd()
 	fp := fmt.Sprintf(`%s/tmp/%d`, path, detail.StartTime)
