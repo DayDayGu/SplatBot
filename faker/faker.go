@@ -32,7 +32,7 @@ func TempPath() string {
 	return path + "/tmp/"
 }
 
-func resourcePath() string {
+func ResourcePath() string {
 	path, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
@@ -82,7 +82,7 @@ func Get(name string) image.Image {
 
 }
 func GetResrc(name string) image.Image {
-	file := resourcePath() + name
+	file := ResourcePath() + name
 	buf, err := os.Open(file)
 	defer buf.Close()
 	if err != nil {

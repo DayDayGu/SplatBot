@@ -12,11 +12,13 @@ import (
 	"time"
 
 	"errors"
+	"regexp"
 	"strings"
 
 	// "date"
 
-	"github.com/PangPangPangPangPang/SplatBot/faker"
+	"SplatBot/faker"
+	// "github.com/PangPangPangPangPang/SplatBot/faker"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -27,6 +29,8 @@ var S Schedules
 var Sa Salmon
 
 var SalmonMap map[string][]byte = make(map[string][]byte)
+
+var Bot *tb.Bot
 
 func main() {
 	// 初始化用于splat数据库
@@ -39,7 +43,7 @@ func main() {
 	// 初始化bot
 	poller := &tb.LongPoller{Timeout: 10 * time.Second}
 	middleware := tb.NewMiddlewarePoller(poller, func(udp *tb.Update) bool {
-		fmt.Printf("%+v\n", udp.Message)
+		go commonQuery(udp)
 		return true
 	})
 	b, err := tb.NewBot(tb.Settings{
@@ -51,6 +55,7 @@ func main() {
 		log.Fatal(err)
 		return
 	}
+	Bot = b
 
 	// league命令
 	league(b)
@@ -297,6 +302,17 @@ func league(b *tb.Bot) {
 			m.Sender.LastName)
 		b.Send(m.Chat, body, tb.ModeHTML, markup)
 	})
+}
+
+func commonQuery(upd *tb.Update) {
+	r, err := regexp.MatchString(".*拉稀.*[B|b]ot", upd.Message.Text)
+	if err == nil && r {
+		path := fmt.Sprintf("%s%s", faker.ResourcePath(), "animation.mp4")
+		file := tb.FromDisk(path)
+		video := &tb.Video{File: file}
+		time.Sleep(300 * time.Millisecond)
+		Bot.Send(upd.Message.Chat, video)
+	}
 }
 
 // Fetch 获取组排信息
