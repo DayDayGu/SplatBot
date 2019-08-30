@@ -17,7 +17,7 @@ import (
 
 	// "date"
 
-	"SplatBot/faker"
+	faker "SplatBot/faker"
 	// "github.com/PangPangPangPangPang/SplatBot/faker"
 	tb "gopkg.in/tucnak/telebot.v2"
 )

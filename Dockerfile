@@ -7,10 +7,14 @@ ENV SPLAT_BOT_TOKEN
 # 打包为release
 ENV SPLAT_ENV release
 
-RUN mkdir -p /go/src/github.com/PangPangPangPangPang
+ENV GO111MODULE auto
 
-COPY . /go/src/github.com/PangPangPangPangPang/SplatBot
-WORKDIR /go/src/github.com/PangPangPangPangPang/SplatBot
+ENV GOPATH /go:/SplatBot
+
+RUN mkdir -p /SplatBot
+
+COPY . /SplatBot
+WORKDIR /SplatBot
 
 RUN go build .
 
