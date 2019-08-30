@@ -43,7 +43,7 @@ func main() {
 	// 初始化bot
 	poller := &tb.LongPoller{Timeout: 10 * time.Second}
 	middleware := tb.NewMiddlewarePoller(poller, func(udp *tb.Update) bool {
-		go commonQuery(udp)
+		// go commonQuery(udp)
 		return true
 	})
 	b, err := tb.NewBot(tb.Settings{
