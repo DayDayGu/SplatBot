@@ -67,6 +67,10 @@ func main() {
 	salmon(b)
 	salmonRaw(b)
 
+	b.Handle(tb.OnText, func(m *tb.Message) {
+		commonQuery(m)
+	})
+
 	// 启动bot
 	b.Start()
 }
@@ -304,14 +308,14 @@ func league(b *tb.Bot) {
 	})
 }
 
-func commonQuery(upd *tb.Update) {
-	r, err := regexp.MatchString(".*拉稀.*[B|b]ot", upd.Message.Text)
+func commonQuery(msg *tb.Message) {
+	r, err := regexp.MatchString(".*拉稀.*[B|b]ot", msg.Text)
 	if err == nil && r {
 		path := fmt.Sprintf("%s%s", faker.ResourcePath(), "animation.mp4")
 		file := tb.FromDisk(path)
 		video := &tb.Video{File: file}
 		time.Sleep(300 * time.Millisecond)
-		Bot.Send(upd.Message.Chat, video)
+		Bot.Reply(msg, video)
 	}
 }
 
