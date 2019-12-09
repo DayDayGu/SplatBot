@@ -78,10 +78,16 @@ type Schedule struct {
 }
 
 // DownloadSalmon ..
-func DownloadSalmon(detail Detail) {
-	if len(Sa.Details) < 1 {
+func DownloadSalmon(details []Detail) {
+	if len(details) < 2 {
 		return
 	}
+	syncDownload(details[0])
+	syncDownload(details[1])
+	Combine(details)
+}
+
+func syncDownload(detail Detail) {
 	var wg sync.WaitGroup
 	for _, weapon := range detail.Weapons {
 		weaponURL, weaponName := weaponConfig(weapon)
@@ -105,7 +111,6 @@ func DownloadSalmon(detail Detail) {
 	}(&wg)
 	wg.Wait()
 
-	Combine(detail)
 }
 
 type circle struct {
@@ -142,8 +147,8 @@ func weaponConfig(weapon WeaponElement) (url string, name string) {
 }
 
 // Combine ..
-func Combine(detail Detail) {
-	width := 660
+func Combine(details []Detail) {
+	width := 660 * 2
 	height := 660
 	ret := image.NewRGBA(image.Rect(0, 0, width, height))
 
@@ -159,30 +164,11 @@ func Combine(detail Detail) {
 	bgImg = resize.Resize(uint(width), uint(height), bgImg, resize.NearestNeighbor)
 	draw.Draw(ret, ret.Bounds(), bgImg, image.ZP, draw.Over)
 
-	stage := faker.Get(detail.Stage.Name)
-	// stage = resize.Resize(640, 360, stage, resize.NearestNeighbor)
-	stage = circleMask(stage, 20)
-	if stage == nil {
-		return
-	}
-	draw.Draw(ret, ret.Bounds().Add(image.Point{10, 150}), stage, image.ZP, draw.Over)
-
-	for idx, weapon := range detail.Weapons {
-		_, weaponName := weaponConfig(weapon)
-		if faker.Exist(weaponName) {
-			weaponImage := faker.Get(weaponName)
-			weaponImage = resize.Resize(150, 150, weaponImage, resize.NearestNeighbor)
-			point := image.Pt(150*idx+30, 0)
-			draw.Draw(ret, ret.Bounds().Add(point), weaponImage, weaponImage.Bounds().Min, draw.Over)
-		}
-	}
-
-	loc, _ := time.LoadLocation("Asia/Shanghai")
-	fontRender(ret, 10, height-90, fmt.Sprintf(`From: %s `, time.Unix(detail.StartTime, 0).In(loc).Format("01-02 Mon 15:04")))
-	fontRender(ret, 10, height-30, fmt.Sprintf(`To: %s`, time.Unix(detail.EndTime, 0).In(loc).Format("01-02 Mon 15:04")))
+	drawContent(0, details[0], ret)
+	drawContent(660, details[1], ret)
 
 	path, _ := os.Getwd()
-	fp := fmt.Sprintf(`%s/tmp/%d`, path, detail.StartTime)
+	fp := fmt.Sprintf(`%s/tmp/%d`, path, details[0].StartTime)
 	f, err := os.Create(fp)
 	if err != nil {
 		fmt.Println(err)
@@ -190,6 +176,32 @@ func Combine(detail Detail) {
 	}
 	defer f.Close()
 	png.Encode(f, ret)
+
+}
+
+func drawContent(left int, detail Detail, img *image.RGBA) {
+	height := 660
+	stage := faker.Get(detail.Stage.Name)
+	// stage = resize.Resize(640, 360, stage, resize.NearestNeighbor)
+	stage = circleMask(stage, 20)
+	if stage == nil {
+		return
+	}
+	draw.Draw(img, img.Bounds().Add(image.Point{left + 10, 150}), stage, image.ZP, draw.Over)
+
+	for idx, weapon := range detail.Weapons {
+		_, weaponName := weaponConfig(weapon)
+		if faker.Exist(weaponName) {
+			weaponImage := faker.Get(weaponName)
+			weaponImage = resize.Resize(100, 100, weaponImage, resize.NearestNeighbor)
+			point := image.Pt(100*idx+100+left, 0)
+			draw.Draw(img, img.Bounds().Add(point), weaponImage, weaponImage.Bounds().Min, draw.Over)
+		}
+	}
+
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	fontRender(img, left+10, height-90, fmt.Sprintf(`From: %s `, time.Unix(detail.StartTime, 0).In(loc).Format("01-02 Mon 15:04")))
+	fontRender(img, left+10, height-30, fmt.Sprintf(`To: %s`, time.Unix(detail.EndTime, 0).In(loc).Format("01-02 Mon 15:04")))
 
 }
 

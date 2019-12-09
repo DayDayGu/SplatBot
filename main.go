@@ -163,7 +163,7 @@ func salmon(b *tb.Bot) {
 		} else if len(Sa.Details) > 0 {
 			// 拼接打工内容图片
 			go func() {
-				DownloadSalmon(Sa.Details[0])
+				DownloadSalmon(Sa.Details)
 				show()
 			}()
 		}
