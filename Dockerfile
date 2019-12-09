@@ -9,12 +9,12 @@ ENV SPLAT_ENV release
 
 ENV GO111MODULE auto
 
-ENV GOPATH /go:/SplatBot
+ENV GOPATH /go:/root/SplatBot
 
-RUN mkdir -p /SplatBot
+RUN mkdir -p /root/SplatBot
 
-COPY . /SplatBot
-WORKDIR /SplatBot
+COPY . /root/SplatBot
+WORKDIR /root/SplatBot
 
 RUN go build .
 
