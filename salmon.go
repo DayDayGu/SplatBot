@@ -148,7 +148,7 @@ func weaponConfig(weapon WeaponElement) (url string, name string) {
 
 // Combine ..
 func Combine(details []Detail) {
-	width := 660 * 2
+	width := 660*2 + 20
 	height := 660
 	ret := image.NewRGBA(image.Rect(0, 0, width, height))
 
@@ -165,7 +165,7 @@ func Combine(details []Detail) {
 	draw.Draw(ret, ret.Bounds(), bgImg, image.ZP, draw.Over)
 
 	drawContent(0, details[0], ret)
-	drawContent(660, details[1], ret)
+	drawContent(680, details[1], ret)
 
 	path, _ := os.Getwd()
 	fp := fmt.Sprintf(`%s/tmp/%d`, path, details[0].StartTime)
@@ -193,8 +193,8 @@ func drawContent(left int, detail Detail, img *image.RGBA) {
 		_, weaponName := weaponConfig(weapon)
 		if faker.Exist(weaponName) {
 			weaponImage := faker.Get(weaponName)
-			weaponImage = resize.Resize(100, 100, weaponImage, resize.NearestNeighbor)
-			point := image.Pt(100*idx+100+left, 0)
+			weaponImage = resize.Resize(150, 150, weaponImage, resize.NearestNeighbor)
+			point := image.Pt(150*idx+30+left, 0)
 			draw.Draw(img, img.Bounds().Add(point), weaponImage, weaponImage.Bounds().Min, draw.Over)
 		}
 	}
