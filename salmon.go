@@ -96,6 +96,8 @@ func syncDownload(detail Detail) {
 			if !faker.Exist(weaponURL) {
 				faker.Download(weaponURL, weaponName)
 				wg.Done()
+			} else {
+				wg.Done()
 			}
 		}(&wg)
 	}
@@ -106,11 +108,12 @@ func syncDownload(detail Detail) {
 		if !faker.Exist(url) {
 			faker.Download(url, name)
 			wg.Done()
+		} else {
+			wg.Done()
 		}
 
 	}(&wg)
 	wg.Wait()
-
 }
 
 type circle struct {

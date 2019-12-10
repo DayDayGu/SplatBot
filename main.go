@@ -33,6 +33,7 @@ var SalmonMap map[string][]byte = make(map[string][]byte)
 var Bot *tb.Bot
 
 func main() {
+	ClearTmpPath()
 	// 初始化用于splat数据库
 	InitDatabase()
 

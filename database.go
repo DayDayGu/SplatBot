@@ -3,10 +3,11 @@ package main
 
 import (
 	"database/sql"
-	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"os"
 	"path/filepath"
+
+	_ "github.com/mattn/go-sqlite3"
 	// "os"
 )
 
@@ -24,6 +25,15 @@ func VolumnPath(file string) string {
 		log.Fatal(err)
 	}
 	return dir + "/" + file
+}
+
+// Delete tmp dir.
+func ClearTmpPath() {
+	s := os.Getenv("SPLAT_ENV")
+	if s != "release" {
+		os.RemoveAll(VolumnPath("tmp"))
+		os.Mkdir(VolumnPath("tmp"), os.ModePerm)
+	}
 }
 
 // InitDatabase init database for splat
