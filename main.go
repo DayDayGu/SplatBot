@@ -439,7 +439,7 @@ func sendNotify(b *tb.Bot, m *tb.Message, invitation LeagueInvitation) {
 	}
 	if count == 1 {
 		body += `
-没人陪你组排，你还有偶像啊！
+新的一年祝您身体健康，万事如意！
 `
 	} else {
 		body += `
