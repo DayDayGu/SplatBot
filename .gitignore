@@ -4,15 +4,16 @@
 *.dll
 *.so
 *.dylib
-blog_backend
-articles
 *.db
+SplatBot
 debug
+tmp/*
+.DS_Store
+.idea/
+__debug_bin
 
 # Test binary, build with `go test -c`
 *.test
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
-
-avatar/

@@ -3,17 +3,19 @@ FROM golang:latest
 RUN go env
 
 # Bot Token
-ENV SPLAT_BOT_TOKEN 
+ENV SPLAT_BOT_TOKEN
 # 打包为release
-ENV SPLAT_ENV release 
+ENV SPLAT_ENV release
 
-RUN go get -u github.com/golang/dep/cmd/dep
-RUN mkdir /go/src/github.com/PangPangPangPangPang
+ENV GO111MODULE auto
 
-COPY . /go/src/github.com/PangPangPangPangPang/SplatBot
-WORKDIR /go/src/github.com/PangPangPangPangPang/SplatBot
+ENV GOPATH /go:/root/SplatBot
 
-RUN dep ensure -v
+RUN mkdir -p /root/SplatBot
+
+COPY . /root/SplatBot
+WORKDIR /root/SplatBot
+
 RUN go build .
 
 ENTRYPOINT ["./SplatBot"]
